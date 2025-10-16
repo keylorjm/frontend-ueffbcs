@@ -28,6 +28,10 @@ export class CursoService {
   private api = inject(ApiService);
   private basePath = 'cursos';
 
+  getMisCursos(): Observable<Curso[]> {
+    // cursos asignados al profesor autenticado (por token)
+    return this.api.get<Curso[]>(`${this.basePath}/mis`);
+  }
   // ✅ Obtiene todos los cursos (sin populate profundo)
   getAll(): Observable<Curso[]> {
     return this.api.get<any>(this.basePath).pipe(
@@ -97,6 +101,8 @@ export class CursoService {
       })
     );
   }
+
+  
 }
 export type { Estudiante, Materia };
 

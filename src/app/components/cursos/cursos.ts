@@ -12,10 +12,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-
 import { BehaviorSubject, Observable, of, forkJoin } from 'rxjs';
 import { catchError, switchMap, tap, map, finalize, timeout, shareReplay } from 'rxjs/operators';
-
+import { Router } from '@angular/router';
 import { Curso, CursoService } from '../../services/curso.service';
 import { CursoFormularioComponent } from '../curso-formulario/curso-formulario';
 import { CursoDetalleComponent } from '../curso-detalle-component/curso-detalle-component'; // 🛑 1. IMPORTAR DETALLES
@@ -80,15 +79,9 @@ export interface ProfesorCompleto {
             >
               <!-- Columna: Nombre -->
               <ng-container matColumnDef="nombre">
-                <th mat-header-cell *matHeaderCellDef>Nombre del Curso</th>
-                <td 
-                  mat-cell 
-                  *matCellDef="let element"
-                  (click)="abrirDetalles(element)" 
-                  class="cursor-pointer font-semibold text-blue-600 hover:text-blue-800 transition duration-150"
-                >
-                  <!-- 🛑 3. AÑADIR CLICK Y ESTILO DE ENLACE -->
-                  {{ element.nombre }}
+                <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                <td mat-cell *matCellDef="let element">
+                  <span class="font-medium text-gray-900">{{ element.nombre }}</span>
                 </td>
               </ng-container>
 
@@ -126,6 +119,15 @@ export interface ProfesorCompleto {
               <ng-container matColumnDef="acciones">
                 <th mat-header-cell *matHeaderCellDef>Acciones</th>
                 <td mat-cell *matCellDef="let element">
+                  <!-- Botón VER (abre abrirDetalles) -->
+                  <button
+                    mat-icon-button
+                    color="primary"
+                    (click)="abrirDetalles(element)"
+                    matTooltip="Ver detalle del curso"
+                  >
+                    <mat-icon>visibility</mat-icon>
+                  </button>
                   <button
                     mat-icon-button
                     color="accent"
@@ -203,7 +205,7 @@ export class CursosComponent implements OnInit {
     'estudiantes',
     'acciones',
   ];
-
+  constructor(private router: Router) {}
   ngOnInit(): void {
     this.dataSource$ = this.reload$$.pipe(
       // Encender spinner y marcar para chequeo (OnPush)
@@ -246,7 +248,7 @@ export class CursosComponent implements OnInit {
               return {
                 ...curso,
                 // Asignamos el objeto completo del profesor para la tabla
-                profesorTutor: profesorCompleto || curso.profesorTutor, 
+                profesorTutor: profesorCompleto || curso.profesorTutor,
               } as Curso;
             });
 
@@ -270,33 +272,19 @@ export class CursosComponent implements OnInit {
     // Dispara la carga inicial
     this.reload$$.next();
   }
-  
-  // 🛑 2. NUEVA FUNCIÓN PARA ABRIR DETALLES
-  abrirDetalles(element: Curso): void {
-  const id = (element as any)._id || element.uid;   // tolera ambos
-  if (!id) {
-    console.error('No hay ID de curso para cargar detalles.');
-    return;
-  }
 
-  this.isLoading$$.next(true); // opcional: muestra spinner pequeño
-  this.cursoService.getById(id).subscribe({
-    next: (cursoPop) => {
-      this.dialog.open(CursoDetalleComponent, {
-        width: '720px',
-        autoFocus: false,
-        data: cursoPop, // 👈 ya viene con profesorTutor, materias y estudiantes como OBJETOS
-      });
-    },
-    error: (err) => {
-      console.error('No se pudo cargar el curso populateado', err);
-    },
-    complete: () => {
-      this.isLoading$$.next(false);
-      this.cdr.markForCheck();
+  abrirDetalles(element: any): void {
+    const id = element?._id ?? element?.uid ?? element?.id ?? null;
+
+    // Debug opcional
+    // console.log('abrirDetalles -> element:', element, 'id:', id);
+
+    if (!id) {
+      console.error('No hay ID de curso para cargar detalles.');
+      return;
     }
-  });
-}
+    this.router.navigate(['/app/curso-detalle', id]); // cambia el prefijo si no usas /app
+  }
 
   abrirFormulario(curso?: Curso): void {
     const dialogRef = this.dialog.open(CursoFormularioComponent, {
