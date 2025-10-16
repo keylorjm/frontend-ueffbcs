@@ -1,13 +1,25 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection } from '@angular/core';
+// app.config.ts
+import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import {
+  provideHttpClient,
+  withInterceptors,
+  withFetch
+} from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { routes } from './app.routes';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+import { AuthInterceptor } from './interceptors/auth.interceptor'; // OJO: nombre en minúsculas si es función
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideBrowserGlobalErrorListeners(),
+    provideAnimations(),
     provideZonelessChangeDetection(),
-    provideRouter(routes), provideClientHydration(withEventReplay())
-  ]
+    provideRouter(routes),
+
+    provideHttpClient(
+      withFetch(),                 // <-- SSR: recomendado
+      withInterceptors([AuthInterceptor]) // <-- interceptor funcional
+    ),
+  ],
 };
