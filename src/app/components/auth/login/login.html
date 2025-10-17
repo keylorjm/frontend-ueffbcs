@@ -1,39 +1,55 @@
 <div class="login-container">
-  <mat-card class="login-card mat-elevation-z8">
-    <mat-card-header>
-      <mat-card-title>
-        <mat-icon color="primary">school</mat-icon>
-        Gestión de Calificaciones
-      </mat-card-title>
-      <mat-card-subtitle>Ingresa tus credenciales</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <form (ngSubmit)="iniciarSesion()">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Correo Electrónico</mat-label>
-          <input matInput type="email" [(ngModel)]="credenciales.correo" name="correo" required>
-          <mat-icon matSuffix>mail</mat-icon>
+  <div class="login-card">
+    <mat-card class="card">
+      <div class="card-header">
+        <img src="assets/logo.png" alt="Logo Unidad Educativa" class="logo" />
+        <h2>U.E.F.B.C.S</h2>
+        <p class="subtitle">Sistema Académico</p>
+      </div>
+
+      <form (ngSubmit)="iniciarSesion()" autocomplete="off">
+        <mat-form-field appearance="outline" class="input-field">
+          <mat-label>Correo</mat-label>
+          <input
+            matInput
+            type="email"
+            name="correo"
+            [(ngModel)]="credenciales.correo"
+            placeholder="ejemplo@ejemplo.com"
+            required
+          />
+          <mat-icon matSuffix>email</mat-icon>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
+        <mat-form-field appearance="outline" class="input-field">
           <mat-label>Contraseña</mat-label>
-          <input matInput type="password" [(ngModel)]="credenciales.clave" name="clave" required>
+          <input
+            matInput
+            type="password"
+            name="clave"
+            [(ngModel)]="credenciales.clave"
+            required
+          />
           <mat-icon matSuffix>lock</mat-icon>
         </mat-form-field>
 
-        <button 
-          mat-raised-button 
-          color="primary" 
-          type="submit" 
-          class="full-width login-button"
-          [disabled]="!credenciales.correo || !credenciales.clave"
+        <button
+          mat-raised-button
+          color="primary"
+          class="login-button"
+          [disabled]="isLoading"
+          type="submit"
         >
-          Iniciar Sesión
+          <mat-spinner *ngIf="isLoading" [diameter]="20"></mat-spinner>
+          <span *ngIf="!isLoading">Iniciar sesión</span>
         </button>
+
+        <div class="help-text">
+          <a routerLink="/recuperar-contrasena">¿Olvidaste tu contraseña?</a>
+        </div>
       </form>
-    </mat-card-content>
-    <mat-card-actions class="footer-actions">
-      <a mat-button color="accent" routerLink="/recuperar-contrasena">¿Olvidaste tu contraseña?</a>
-    </mat-card-actions>
-  </mat-card>
+    </mat-card>
+  </div>
+
+  <div class="background-image"></div>
 </div>

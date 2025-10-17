@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+// Material Modules
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,6 +9,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu'; // Añadido para acciones de gestión
 
 import { ProfesorCompleto } from '../../services/curso.service';
 import { Curso, CursoService } from '../../services/curso.service';
@@ -26,169 +28,252 @@ import { Estudiante } from '../../services/estudiante.service';
     MatListModule,
     MatDividerModule,
     MatChipsModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatMenuModule,
   ],
   template: `
-    <div class="min-h-screen flex flex-col bg-gray-50">
-      <!-- Barra superior -->
-      <header class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-6 py-5 flex items-center justify-between">
+    <div class="min-h-screen flex flex-col bg-gray-100">
+      
+      <header
+        class="sticky top-0 z-10 bg-white shadow-md px-6 py-4 flex items-center justify-between border-b border-gray-200"
+      >
         <div class="flex items-center gap-4">
-          <button mat-icon-button color="accent" (click)="volver()">
-            <mat-icon class="text-white">arrow_back</mat-icon>
+          <button mat-icon-button (click)="volver()" matTooltip="Volver">
+            <mat-icon color="primary">arrow_back</mat-icon>
           </button>
           <div>
-            <h1 class="text-3xl font-bold tracking-tight">
+            <h1 class="text-3xl font-bold tracking-tight text-gray-800">
               {{ curso()?.nombre || 'Cargando curso...' }}
             </h1>
-            <p class="opacity-90 text-sm">Detalles del curso</p>
+            <p class="text-sm text-gray-500">Detalles del curso</p>
           </div>
         </div>
 
-        <div class="hidden sm:flex gap-3" *ngIf="curso()">
-          <mat-chip-set>
-            <mat-chip class="!bg-white/10 !text-white" matTooltip="Total de materias">
-              <mat-icon class="mr-1 !text-white">menu_book</mat-icon>
+        <div class="flex items-center gap-3" *ngIf="curso() as c">
+          
+          <mat-chip-set class="hidden md:flex">
+            <mat-chip color="primary" selected class="!bg-blue-100/50 !text-blue-800" matTooltip="Total de materias">
+              <mat-icon class="mr-1">menu_book</mat-icon>
               {{ materias().length }} materias
             </mat-chip>
-            <mat-chip class="!bg-white/10 !text-white" matTooltip="Total de estudiantes">
-              <mat-icon class="mr-1 !text-white">group</mat-icon>
+            <mat-chip color="accent" selected class="!bg-indigo-100/50 !text-indigo-800" matTooltip="Total de estudiantes">
+              <mat-icon class="mr-1">group</mat-icon>
               {{ estudiantes().length }} estudiantes
             </mat-chip>
           </mat-chip-set>
+
+          <button mat-flat-button [matMenuTriggerFor]="menuAcciones" color="primary">
+            <mat-icon>settings</mat-icon>
+            <span class="hidden sm:inline-flex ml-2">Gestionar</span>
+          </button>
+          
+          <mat-menu #menuAcciones="matMenu">
+            <button mat-menu-item (click)="editarCurso(c)">
+              <mat-icon color="primary">edit</mat-icon>
+              <span>Editar Curso</span>
+            </button>
+            <button mat-menu-item (click)="eliminarCurso(c)">
+              <mat-icon color="warn">delete</mat-icon>
+              <span>Eliminar Curso</span>
+            </button>
+          </mat-menu>
+
         </div>
       </header>
 
-      <!-- Contenido -->
-      <main class="flex-1 overflow-y-auto px-6 py-8 grid gap-8 w-full">
-        <ng-container *ngIf="estado() === 'cargando'">
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
-            <p>Cargando información del curso…</p>
-          </section>
-        </ng-container>
-
-        <ng-container *ngIf="estado() === 'error'">
-          <section class="rounded-xl border border-red-200 bg-white shadow-sm p-6">
-            <p class="text-red-600 font-medium">No se pudo cargar el curso.</p>
-            <button mat-stroked-button color="primary" (click)="volver()">
-              <mat-icon>arrow_back</mat-icon>
-              Volver
-            </button>
-          </section>
+      <main class="flex-1 overflow-y-auto p-6 md:p-8">
+        
+        <ng-container *ngIf="estado() === 'cargando' || estado() === 'error'">
+          <mat-card class="p-8 text-center shadow-lg">
+            <ng-container *ngIf="estado() === 'cargando'">
+              <mat-icon class="animate-spin text-blue-600 mb-4 text-4xl">sync</mat-icon>
+              <p class="text-lg font-medium">Cargando información del curso...</p>
+            </ng-container>
+            <ng-container *ngIf="estado() === 'error'">
+              <mat-icon class="text-red-600 mb-4 text-4xl">error_outline</mat-icon>
+              <p class="text-lg font-medium text-red-600">Error: No se pudo cargar el curso.</p>
+              <button mat-flat-button color="primary" (click)="volver()" class="mt-4">
+                <mat-icon>arrow_back</mat-icon> Volver
+              </button>
+            </ng-container>
+          </mat-card>
         </ng-container>
 
         <ng-container *ngIf="estado() === 'ok' && curso() as c">
-          <!-- Tutor -->
-          <section class="bg-white">
-            <header class="flex items-center gap-2 px-5 py-4 border-b border-gray-100 bg-gray-50">
-              <mat-icon color="primary">person</mat-icon>
-              <h3 class="text-lg font-semibold text-gray-800">Tutor asignado</h3>
-            </header>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <div class="px-5 py-4">
-              <ng-container *ngIf="tutorObj(); else noTutor">
-                <div class="flex items-center gap-3">
-                  <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                    <mat-icon color="primary">badge</mat-icon>
+            <div class="lg:col-span-1 flex flex-col gap-6">
+              
+              <mat-card class="shadow-xl p-0">
+                <header class="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-blue-50 rounded-t-lg">
+                  <div class="flex items-center gap-2">
+                    <mat-icon color="primary">person_pin</mat-icon>
+                    <h3 class="text-lg font-semibold text-gray-800">Tutor Principal</h3>
                   </div>
-                  <div>
-                    <p class="text-base font-medium text-gray-900 leading-6">{{ tutorObj()!.nombre }}</p>
-                    <p class="text-sm text-gray-500">Tutor responsable</p>
+                  <button mat-icon-button color="primary" (click)="asignarTutor(c)" matTooltip="Asignar o cambiar tutor">
+                    <mat-icon>manage_accounts</mat-icon>
+                  </button>
+                </header>
+
+                <div class="p-5">
+                  <ng-container *ngIf="tutorObj(); else noTutor">
+                    <div class="flex items-center gap-3 p-2 bg-blue-50/50 rounded-lg">
+                      <div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 border-2 border-blue-500">
+                        <mat-icon color="primary" class="!text-3xl">badge</mat-icon>
+                      </div>
+                      <div>
+                        <p class="text-base font-semibold text-gray-900 leading-tight">
+                          {{ tutorObj()!.nombre }}
+                        </p>
+                        <p class="text-sm text-gray-600 italic">Profesor Tutor</p>
+                      </div>
+                    </div>
+                  </ng-container>
+
+                  <ng-template #noTutor>
+                    <div class="text-center p-4 text-gray-500 bg-gray-50 rounded-lg">
+                      <mat-icon class="mb-1">sentiment_dissatisfied</mat-icon>
+                      <p class="italic text-sm">Sin tutor asignado aún.</p>
+                      <button mat-button color="primary" (click)="asignarTutor(c)" class="mt-2">
+                        Asignar Tutor
+                      </button>
+                    </div>
+                  </ng-template>
+                </div>
+              </mat-card>
+            </div>
+
+
+            <div class="lg:col-span-2 flex flex-col gap-6">
+
+              <mat-card class="shadow-xl p-0">
+                <header class="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-white rounded-t-lg">
+                  <div class="flex items-center gap-2">
+                    <mat-icon color="accent">menu_book</mat-icon>
+                    <h3 class="text-lg font-semibold text-gray-800">Materias</h3>
+                    <span class="text-sm text-gray-500">({{ materias().length }})</span>
                   </div>
-                </div>
-              </ng-container>
+                  <button mat-flat-button color="accent" (click)="agregarMateria(c)" matTooltip="Agregar nueva materia o asociar">
+                    <mat-icon>add</mat-icon>
+                    <span class="hidden sm:inline ml-1">Agregar</span>
+                  </button>
+                </header>
 
-              <ng-template #noTutor>
-                <div class="flex items-center gap-3 text-gray-500">
-                  <mat-icon>info</mat-icon>
-                  <p class="italic">Tutor no disponible o sin asignar.</p>
-                </div>
-              </ng-template>
-            </div>
-          </section>
-
-          <!-- Materias -->
-          <section class="bg-white">
-            <header class="flex items-center gap-2 px-5 py-4 border-b border-gray-100 bg-gray-50">
-              <mat-icon color="primary">menu_book</mat-icon>
-              <h3 class="text-lg font-semibold text-gray-800">
-                Materias
-                <span class="text-sm text-gray-500">({{ materias().length }})</span>
-              </h3>
-            </header>
-
-            <div class="max-h-80 overflow-y-auto">
-              <mat-list>
-                <div *ngIf="materias().length === 0" class="p-4 text-gray-500 flex items-center gap-3">
-                  <mat-icon>library_books</mat-icon>
-                  <span class="italic">Este curso no tiene materias asignadas.</span>
-                </div>
-
-                <ng-container *ngFor="let m of materias(); let last = last">
-                  <mat-list-item class="!py-3">
-                    <mat-icon matListIcon color="primary">bookmark_added</mat-icon>
-                    <div matLine class="font-medium text-gray-900">{{ m.nombre }}</div>
-                  </mat-list-item>
-                  <mat-divider *ngIf="!last"></mat-divider>
-                </ng-container>
-              </mat-list>
-            </div>
-          </section>
-
-          <!-- Estudiantes -->
-          <section class="bg-white">
-            <header class="flex items-center gap-2 px-5 py-4 border-b border-gray-100 bg-gray-50">
-              <mat-icon color="warn">group</mat-icon>
-              <h3 class="text-lg font-semibold text-gray-800">
-                Estudiantes inscritos
-                <span class="text-sm text-gray-500">({{ estudiantes().length }})</span>
-              </h3>
-            </header>
-
-            <div class="max-h-80 overflow-y-auto">
-              <mat-list>
-                <div *ngIf="estudiantes().length === 0" class="p-4 text-gray-500 flex items-center gap-3">
-                  <mat-icon>person_off</mat-icon>
-                  <span class="italic">Este curso no tiene estudiantes inscritos.</span>
-                </div>
-
-                <ng-container *ngFor="let e of estudiantes(); let last = last">
-                  <mat-list-item class="!py-3">
-                    <div matListAvatar class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                      <mat-icon>person</mat-icon>
+                <div class="max-h-[20rem] overflow-y-auto">
+                  <mat-list>
+                    <div
+                      *ngIf="materias().length === 0"
+                      class="p-5 text-gray-500 flex items-center gap-3"
+                    >
+                      <mat-icon>library_add</mat-icon>
+                      <span class="italic">No hay materias en este curso.</span>
                     </div>
-                    <div>
-                      <div matLine class="font-medium text-gray-900">{{ e.nombre }}</div>
-                      <div matLine class="text-sm text-gray-500">Estudiante</div>
+
+                    <ng-container *ngFor="let m of materias(); let last = last">
+                      <mat-list-item class="!py-3 hover:bg-gray-50 transition duration-150">
+                        <mat-icon matListIcon color="accent">bookmark_added</mat-icon>
+                        <div matListItemTitle class="font-medium text-gray-900">{{ m.nombre }}</div>
+                        <div matListItemLine class="text-sm text-gray-500">Materia asociada</div>
+                        <div class="flex gap-2">
+                          <button mat-icon-button (click)="editarMateria(m)" matTooltip="Editar materia">
+                            <mat-icon>edit</mat-icon>
+                          </button>
+                          <button mat-icon-button color="warn" (click)="eliminarMateria(m)" matTooltip="Desasociar/Eliminar">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </div>
+                      </mat-list-item>
+                      <mat-divider *ngIf="!last"></mat-divider>
+                    </ng-container>
+                  </mat-list>
+                </div>
+              </mat-card>
+
+              <mat-card class="shadow-xl p-0">
+                <header class="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-white rounded-t-lg">
+                  <div class="flex items-center gap-2">
+                    <mat-icon color="warn">group</mat-icon>
+                    <h3 class="text-lg font-semibold text-gray-800">Estudiantes Inscritos</h3>
+                    <span class="text-sm text-gray-500">({{ estudiantes().length }})</span>
+                  </div>
+                  <button mat-flat-button color="warn" (click)="agregarEstudiante(c)" matTooltip="Inscribir un estudiante">
+                    <mat-icon>person_add</mat-icon>
+                    <span class="hidden sm:inline ml-1">Inscribir</span>
+                  </button>
+                </header>
+
+                <div class="max-h-[20rem] overflow-y-auto">
+                  <mat-list>
+                    <div
+                      *ngIf="estudiantes().length === 0"
+                      class="p-5 text-gray-500 flex items-center gap-3"
+                    >
+                      <mat-icon>person_off</mat-icon>
+                      <span class="italic">Este curso no tiene estudiantes inscritos.</span>
                     </div>
-                  </mat-list-item>
-                  <mat-divider *ngIf="!last"></mat-divider>
-                </ng-container>
-              </mat-list>
+
+                    <ng-container *ngFor="let e of estudiantes(); let last = last">
+                      <mat-list-item class="!py-3 hover:bg-gray-50 transition duration-150">
+                        <div
+                          matListAvatar
+                          class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-medium text-sm flex-shrink-0"
+                        >
+                          {{ e.nombre.charAt(0) }}
+                        </div>
+                        <div>
+                          <div matListItemTitle class="font-medium text-gray-900">{{ e.nombre }}</div>
+                          <div matListItemLine class="text-sm text-gray-500">Estudiante</div>
+                        </div>
+                        <div class="flex gap-2">
+                          <button mat-icon-button (click)="editarEstudiante(e)" matTooltip="Editar estudiante">
+                            <mat-icon>edit</mat-icon>
+                          </button>
+                          <button mat-icon-button color="warn" (click)="eliminarEstudiante(e)" matTooltip="Dar de baja/Eliminar">
+                            <mat-icon>person_remove</mat-icon>
+                          </button>
+                        </div>
+                      </mat-list-item>
+                      <mat-divider *ngIf="!last"></mat-divider>
+                    </ng-container>
+                  </mat-list>
+                </div>
+              </mat-card>
             </div>
-          </section>
+          </div>
         </ng-container>
       </main>
 
-      <!-- Barra inferior -->
       <footer class="bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
         <button mat-stroked-button color="primary" (click)="volver()">
           <mat-icon>arrow_back</mat-icon>
           Atrás
         </button>
-        <a mat-flat-button color="primary" [routerLink]="['/cursos']">
-          <mat-icon>close</mat-icon>
-          Ir a cursos
+
+        <a mat-flat-button color="accent" [routerLink]="['/app/cursos']">
+          <mat-icon>list_alt</mat-icon>
+          Ver Cursos
         </a>
       </footer>
     </div>
   `,
-  styles: [`
-    :host { display: block; min-height: 100dvh; }
-    mat-list { padding: 0; }
-    .mat-mdc-list-item { height: auto !important; }
-  `]
+  styles: [
+    `
+      :host {
+        display: block;
+        min-height: 100dvh;
+      }
+      mat-list {
+        padding: 0;
+      }
+      /* Asegura que los ítems de lista tengan espacio suficiente para los iconos de acción */
+      .mat-mdc-list-item {
+        height: auto !important;
+      }
+    `,
+  ],
 })
 export class CursoDetalleComponent {
+  // Las inyecciones y la lógica se mantienen intactas.
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cursoService = inject(CursoService);
@@ -201,7 +286,9 @@ export class CursoDetalleComponent {
     Array.isArray(this._curso()?.materias) ? (this._curso()!.materias as any as Materia[]) : []
   );
   estudiantes = computed<Estudiante[]>(() =>
-    Array.isArray(this._curso()?.estudiantes) ? (this._curso()!.estudiantes as any as Estudiante[]) : []
+    Array.isArray(this._curso()?.estudiantes)
+      ? (this._curso()!.estudiantes as any as Estudiante[])
+      : []
   );
 
   private isTutorObject(x: unknown): x is ProfesorCompleto {
@@ -232,7 +319,7 @@ export class CursoDetalleComponent {
       error: (e) => {
         console.error('Error cargando curso', e);
         this.estado.set('error');
-      }
+      },
     });
   }
 
@@ -240,7 +327,53 @@ export class CursoDetalleComponent {
     if (window.history.length > 1) {
       window.history.back();
     } else {
-      this.router.navigate(['/cursos']);
+      this.router.navigate(['/app/cursos']);
     }
+  }
+
+  // MÉTODOS DE GESTIÓN (CRUD) - SIN CAMBIOS EN LA FUNCIONALIDAD
+  editarCurso(curso: Curso) {
+    console.log('Abrir modal/formulario para editar el curso:', curso.nombre);
+    // Lógica para abrir modal de edición...
+  }
+
+  eliminarCurso(curso: Curso) {
+    console.log('Abrir modal/confirmación para eliminar el curso:', curso.nombre);
+    // Lógica para abrir modal de confirmación...
+  }
+  
+  asignarTutor(curso: Curso) {
+    console.log('Abrir modal/selección para asignar tutor al curso:', curso.nombre);
+    // Lógica para asignar tutor...
+  }
+
+  agregarMateria(curso: Curso) {
+    console.log('Abrir modal/formulario para agregar materia al curso:', curso.nombre);
+    // Lógica para agregar materia...
+  }
+
+  editarMateria(materia: Materia) {
+    console.log('Abrir modal/formulario para editar la materia:', materia.nombre);
+    // Lógica para editar materia...
+  }
+
+  eliminarMateria(materia: Materia) {
+    console.log('Abrir modal/confirmación para eliminar la materia:', materia.nombre);
+    // Lógica para desasociar/eliminar materia...
+  }
+
+  agregarEstudiante(curso: Curso) {
+    console.log('Abrir modal/selección para agregar estudiante al curso:', curso.nombre);
+    // Lógica para agregar estudiante...
+  }
+
+  editarEstudiante(estudiante: Estudiante) {
+    console.log('Abrir modal/formulario para editar el estudiante:', estudiante.nombre);
+    // Lógica para editar estudiante...
+  }
+
+  eliminarEstudiante(estudiante: Estudiante) {
+    console.log('Abrir modal/confirmación para eliminar el estudiante:', estudiante.nombre);
+    // Lógica para desasociar/eliminar estudiante...
   }
 }

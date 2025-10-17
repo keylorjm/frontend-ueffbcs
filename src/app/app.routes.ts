@@ -4,8 +4,10 @@ import { LoginComponent } from './components/auth/login/login';
 import { RecuperarContrasenaComponent } from './components/auth/recuperar-contrasena/recuperar-contrasena';
 import { MainLayoutComponent } from './components/layout/main-layout/main-layout';
 import { AuthGuard } from './guards/auth.guard';
-import { MisCursos } from './components/mis-cursos/mis-cursos';
 import { Usuarios } from './components/usuarios/usuarios';
+import { ProfesorGuard } from './guards/profesor.guard';
+import { AdminGuard } from './guards/admin.guard';
+import { RestablecerContrasenaComponent } from './components/auth/restablecer-contrasena/restablecer-contrasena';
 
 export const routes: Routes = [
   // 1. Ruta de Inicio (Al cargar la app, redirige al login)
@@ -14,8 +16,13 @@ export const routes: Routes = [
   // 2. Rutas de Autenticación (Públicas)
   { path: 'login', component: LoginComponent, title: 'Iniciar Sesión' },
   {
-    path: 'restablecer-contrasena/:token',
+    path: 'recuperar-contrasena',
     component: RecuperarContrasenaComponent,
+    title: 'Recuperar Clave',
+  },
+  {
+    path: 'restablecer-contrasena/:resetToken',
+    component: RestablecerContrasenaComponent,
     title: 'Restablecer Clave',
   },
 
@@ -26,37 +33,49 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     children: [
       { path: '', redirectTo: 'mis-cursos', pathMatch: 'full' },
-
       {
         path: 'mis-cursos',
-        component: MisCursos,
+        canActivate: [ProfesorGuard],
+        loadComponent: () =>
+          import('./components/profesor-mis-cursos/profesor-mis-cursos').then(
+            (m) => m.ProfesorMisCursos
+          ),
         title: 'Mis Cursos',
       },
-
       {
         path: 'usuarios',
+        canActivate: [AdminGuard],
         component: Usuarios,
         title: 'Gestión de Usuarios',
       },
-
-      // Implementar el resto como componentes separados
       {
         path: 'estudiantes',
+        canActivate: [AdminGuard],
         loadComponent: () =>
           import('./components/estudiantes/estudiantes').then((m) => m.EstudiantesComponent),
         title: 'Gestión de Estudiantes',
       },
       {
         path: 'calificaciones',
+        canActivate: [AdminGuard],
         loadComponent: () =>
           import('./components/calificaciones/calificaciones').then((m) => m.Calificaciones),
         title: 'Ingreso de Calificaciones',
       },
       {
         path: 'cursos',
+        canActivate: [AdminGuard],
         loadComponent: () => import('./components/cursos/cursos').then((m) => m.CursosComponent),
         title: 'Gestión de Cursos',
       },
+      {
+        path: 'materias',
+        canActivate: [AdminGuard],
+        loadComponent: () =>
+          import('./components/materias/materias').then((m) => m.MateriasComponent),
+        title: 'Gestión de Materias',
+      },
+
       {
         path: 'curso-detalle/:id',
         loadComponent: () =>
@@ -64,14 +83,18 @@ export const routes: Routes = [
             (m) => m.CursoDetalleComponent
           ),
         title: 'Detalle del Curso',
-      },     
-
-      {
-        path: 'materias',
-        loadComponent: () =>
-          import('./components/materias/materias').then((m) => m.MateriasComponent),
-        title: 'Gestión de Materias',
       },
+      {
+        path: 'curso/:id/notas',
+        canActivate: [ProfesorGuard],
+        loadComponent: () =>
+          import('./components/curso-notas-estudiante/curso-notas-estudiante').then(
+            (m) => m.CursoNotasEstudianteComponent
+          ),
+        title: 'Notas por estudiante',
+      },
+
+      { path: '**', redirectTo: 'mis-cursos' },
     ],
   },
 

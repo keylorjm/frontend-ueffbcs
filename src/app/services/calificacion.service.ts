@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../environments/environment';
 
 export interface NotaPayload {
   estudianteId: string;
@@ -10,9 +11,8 @@ export interface NotaPayload {
 
 @Injectable({ providedIn: 'root' })
 export class CalificacionService {
-  private base = '/api/calificaciones';
-
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
+  private base = `${environment.apiUrl}/calificaciones`;
 
   guardarNotasCurso(cursoId: string, notas: NotaPayload[]): Observable<any> {
     return this.http.put<any>(`${this.base}/curso/${cursoId}`, { notas });
